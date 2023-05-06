@@ -1,0 +1,57 @@
+components:
+  schemas:
+    Demo:
+      properties:
+        content:
+          type: string
+        id:
+          type: integer
+      type: object
+info:
+  contact:
+    email: av3089@columbia.edu
+  description: Demo API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Demo API
+  version: 1.0.0-oas3
+openapi: 3.0.0
+paths:
+  /demo/{columbia_uni}:
+    get:
+      parameters:
+      - in: path
+        name: columbia_uni
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Successful Response
+        '400':
+          description: Didn't supply UNI, or UNI incorrect
+        default:
+          description: Other responses
+  /hello:
+    get:
+      parameters:
+      - description: tell me your name
+        in: query
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+        '400':
+          description: Didn't supply name
+        default:
+          description: Other responses
+servers:
+- description: Local server
+  url: http://localhost:5000
+tags:
+- description: Sample Tag Description
+  name: Sample Tag

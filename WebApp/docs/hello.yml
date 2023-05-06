@@ -1,0 +1,21 @@
+paths:
+  /hello/{name}:
+    get:
+      summary: Returns a personalized greeting
+      parameters:
+        - name: name
+          in: path
+          type: string
+          required: true
+          description: The name to greet
+      responses:
+        200:
+          description: A greeting message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: The greeting message
