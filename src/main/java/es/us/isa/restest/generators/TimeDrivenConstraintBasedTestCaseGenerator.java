@@ -316,7 +316,7 @@ public class TimeDrivenConstraintBasedTestCaseGenerator extends AbstractTestCase
     // Returns true if there are more test cases to be generated
     protected boolean hasNext(String OperationId) {
         long sum = 0;
-        double frac = 0.5;
+        double frac = 1 / (double) spec.getSpecification().getPaths().keySet().size();
         if (this.averageResponseTimePerAPIEndpoint != null) {
             for (long value : this.averageResponseTimePerAPIEndpoint.values()) {
                 sum += value;
