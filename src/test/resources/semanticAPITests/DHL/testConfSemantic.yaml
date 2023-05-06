@@ -6,6 +6,7 @@ auth:
     DHL-API-Key: qIweAAOjRnVLAurrq8ne3lHxAwZ1yY2g
   apiKeysPath: null
   headersPath: null
+  oauthPath: null
 testConfiguration:
   operations:
   - testPath: /find-by-address
@@ -28,7 +29,7 @@ testConfiguration:
           objectValues: null
         - name: numberOfTriesToGenerateRegex
           values:
-          - 0
+          - 1
           objectValues: null
         valid: true
     - name: addressLocality
@@ -159,5 +160,3 @@ testConfiguration:
           objectValues: null
         valid: true
     expectedResponse: 200
-
-

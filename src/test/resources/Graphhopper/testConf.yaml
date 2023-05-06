@@ -5,6 +5,7 @@ auth:
   headerParams: {}
   apiKeysPath: null
   headersPath: null
+  oauthPath: null
 testConfiguration:
   operations:
   - testPath: /route
@@ -67,13 +68,11 @@ testConfiguration:
       in: query
       weight: 0.5
       generators:
-      - type: RandomInputValue
+      - type: RandomEnglishWord
         genParameters:
-        - name: values
+        - name: maxWords
           values:
-          - any
-          - right
-          - left
+          - 1
           objectValues: null
         valid: true
     - name: turn_costs
@@ -353,7 +352,7 @@ testConfiguration:
       weight: null
       generators:
       - type: BodyGenerator
-        genParameters: [ ]
+        genParameters: []
         valid: true
     expectedResponse: 200
   - testPath: /route/info

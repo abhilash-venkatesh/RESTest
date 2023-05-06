@@ -28,10 +28,11 @@ import static es.us.isa.restest.main.TestGenerationAndExecution.*;
 import java.util.Collection;
 import java.util.List;
 
-
 /**
  *
- * This class generates the statistics related to the generation and execution of test cases. Currently, it generates test cases in CVS format and coverage data
+ * This class generates the statistics related to the generation and execution
+ * of test cases. Currently, it generates test cases in CVS format and coverage
+ * data
  *
  */
 public class StatsReportManager {
@@ -44,12 +45,11 @@ public class StatsReportManager {
     private CoverageMeter coverageMeter;
     Collection<TestCase> testCases = null;
     private boolean secondPredicateSearch;
-    private Integer maxNumberOfPredicates;                // MaxNumberOfPredicates = AdditionalPredicates + 1
+    private Integer maxNumberOfPredicates; // MaxNumberOfPredicates = AdditionalPredicates + 1
     private Integer minimumValidAndInvalidValues;
     private String metricToUse;
     private Double minimumValueOfMetric;
     private Integer maxNumberOfTriesToGenerateRegularExpression;
-
 
     private static final Logger logger = LogManager.getLogger(StatsReportManager.class.getName());
 
@@ -57,9 +57,10 @@ public class StatsReportManager {
         this(PropertyManager.readProperty("data.tests.dir"), PropertyManager.readProperty("data.coverage.tests.dir"));
     }
 
-    public StatsReportManager(String testDataDir, String coverageDataDir, boolean enableCSVStats, boolean enableInputCoverage, boolean enableOutputCoverage, CoverageMeter coverageMeter,
-                              Boolean secondPredicateSearch, Integer maxNumberOfPredicates, Integer minimumValidAndInvalidValues,
-                              String metricToUse, Double minimumValueOfMetric, Integer maxNumberOfTriesToGenerateRegularExpression) {
+    public StatsReportManager(String testDataDir, String coverageDataDir, boolean enableCSVStats,
+            boolean enableInputCoverage, boolean enableOutputCoverage, CoverageMeter coverageMeter,
+            Boolean secondPredicateSearch, Integer maxNumberOfPredicates, Integer minimumValidAndInvalidValues,
+            String metricToUse, Double minimumValueOfMetric, Integer maxNumberOfTriesToGenerateRegularExpression) {
         this.testDataDir = testDataDir;
         this.coverageDataDir = coverageDataDir;
         this.enableCSVStats = enableCSVStats;
@@ -94,91 +95,108 @@ public class StatsReportManager {
 
     }
 
-
     public void learn(String testId, OpenAPISpecification spec, String confPath) {
 
         // 1. Get Semantic Operations (Set<SemanticOperation>)
         // 2. Set valid and invalid values with values from previous iterations
         List<Operation> operations = getTestConfigurationObject().getTestConfiguration().getOperations();
-        // An operation is a SemanticOperation if it contains the genParameter "predicates"
-        Set<SemanticOperation> semanticOperations = getSemanticOperationsWithValuesFromPreviousIterations(operations, getExperimentName());
-
+        // An operation is a SemanticOperation if it contains the genParameter
+        // "predicates"
+        Set<SemanticOperation> semanticOperations = getSemanticOperationsWithValuesFromPreviousIterations(operations,
+                getExperimentName());
 
         // Get TestResults
-        String csvTrPath = testDataDir + "/" + PropertyManager.readProperty("data.tests.testresults.file") + "_" + testId + ".csv";
+        String csvTrPath = testDataDir + "/" + PropertyManager.readProperty("data.tests.testresults.file") + "_"
+                + testId + ".csv";
         List<TestResult> trs = TestManager.getTestResults(csvTrPath);
 
         // Iterate the test cases of an operation
-        for(TestCase testCase: testCases) {
+        for (TestCase testCase : testCases) {
             // The results are only considered if the testCase is not faulty
             if (Boolean.TRUE.equals(!testCase.getFaulty())) {
                 // Obtain response code of the given testCase
                 String responseCode = trs.stream().filter(tr -> tr.getId().equals(testCase.getId()))
                         .findFirst()
-                        .orElseThrow(() -> new NullPointerException("Associated test result not found")).getStatusCode();
+                        .orElseThrow(() -> new NullPointerException("Associated test result not found"))
+                        .getStatusCode();
 
-                // Add parameter value to valid or invalid values depending on the response code, ONLY if this is a SemanticOperation
+                // Add parameter value to valid or invalid values depending on the response
+                // code, ONLY if this is a SemanticOperation
                 if (semanticOperations.stream().anyMatch(so -> so.getOperationId().equals(testCase.getOperationId())))
                     updateValidAndInvalidValues(semanticOperations, testCase, responseCode);
             }
         }
 
         // Write csv of valid and invalid values (directory)
-        for(SemanticOperation semanticOperation: semanticOperations){
+        for (SemanticOperation semanticOperation : semanticOperations) {
             semanticOperation.updateCSVWithValidAndInvalidValues(getExperimentName());
         }
 
         // Learn regular expression
-        for(SemanticOperation semanticOperation: semanticOperations){
-            for(SemanticParameter semanticParameter: semanticOperation.getSemanticParameters()){
+        for (SemanticOperation semanticOperation : semanticOperations) {
+            for (SemanticParameter semanticParameter : semanticOperation.getSemanticParameters()) {
 
                 Set<String> validSet = semanticParameter.getValidValues();
                 Set<String> invalidSet = semanticParameter.getInvalidValues();
 
-                // If the obtained data is enough, a regular expression is generated and the associated csv file is filtered
-                if(invalidSet.size() >= minimumValidAndInvalidValues && validSet.size() >= minimumValidAndInvalidValues &&
-                   semanticParameter.getNumberOfTriesToGenerateRegex() < maxNumberOfTriesToGenerateRegularExpression){
+                // If the obtained data is enough, a regular expression is generated and the
+                // associated csv file is filtered
+                if (invalidSet.size() >= minimumValidAndInvalidValues && validSet.size() >= minimumValidAndInvalidValues
+                        &&
+                        semanticParameter
+                                .getNumberOfTriesToGenerateRegex() < maxNumberOfTriesToGenerateRegularExpression) {
 
                     // Increase the number of tries
                     // and update testConf with new value of number of tries
-                    updateTestConfWithIncreasedNumberOfTries(getTestConfigurationObject(), confPath, semanticOperation, semanticParameter);
+                    updateTestConfWithIncreasedNumberOfTries(getTestConfigurationObject(), confPath, semanticOperation,
+                            semanticParameter);
 
                     // OperationName_parameterId
-                    String name = semanticOperation.getOperationId() + "_" + semanticParameter.getTestParameter().getName();
+                    String name = semanticOperation.getOperationId() + "_"
+                            + semanticParameter.getTestParameter().getName();
 
                     // Generate regex
                     logger.info("Generating regex...");
-                    FinalSolution solution = learnRegex(name, validSet, invalidSet,false);
+                    FinalSolution solution = learnRegex(name, validSet, invalidSet, false);
                     String regex = solution.getSolution();
-                    logger.info("Regex learned for parameter {}: {} ", semanticParameter.getTestParameter().getName(), regex);
+                    logger.info("Regex learned for parameter {}: {} ", semanticParameter.getTestParameter().getName(),
+                            regex);
                     logger.info("Accuracy: {}", solution.getValidationPerformances().get("character accuracy"));
                     logger.info("Precision: {}", solution.getValidationPerformances().get("match precision"));
                     logger.info("Recall: {}", solution.getValidationPerformances().get("match recall"));
                     logger.info("F1-Score: {}", solution.getValidationPerformances().get("match f-measure"));
-                    logger.info("\n Number of tries for generating regex for this parameter: {}/{}", semanticParameter.getNumberOfTriesToGenerateRegex(), maxNumberOfTriesToGenerateRegularExpression);
-//                "match precision"
-//                        "character accuracy": 1.0,
-//                        "character precision": 1.0,
-//                        "match recall": 1.0,
-//                        "character recall": 1.0,
-//                        "match f-measure": 1.0
+                    logger.info("\n Number of tries for generating regex for this parameter: {}/{}",
+                            semanticParameter.getNumberOfTriesToGenerateRegex(),
+                            maxNumberOfTriesToGenerateRegularExpression);
+                    // "match precision"
+                    // "character accuracy": 1.0,
+                    // "character precision": 1.0,
+                    // "match recall": 1.0,
+                    // "character recall": 1.0,
+                    // "match f-measure": 1.0
 
-                    // If the performance of the generated regex surpasses a given value of the selected metric (acc, precision, recall and F1-Score), filter csv file
-                    if(solution.getValidationPerformances().get(metricToUse)  >= minimumValueOfMetric){
+                    // If the performance of the generated regex surpasses a given value of the
+                    // selected metric (acc, precision, recall and F1-Score), filter csv file
+                    if (solution.getValidationPerformances().get(metricToUse) >= minimumValueOfMetric) {
                         // Filter all the CSVs of the associated testParameter (testConfSemantic)
                         updateCsvWithRegex(semanticParameter, regex);
 
-                        // Update CSVs of valid and invalid values according to the generated regular expression (test-data folder)
-                        updateCsvWithRegex(semanticParameter.getValidCSVPath(getExperimentName(),semanticOperation.getOperationId()), regex);
-                        updateCsvWithRegex(semanticParameter.getInvalidCSVPath(getExperimentName(), semanticOperation.getOperationId()), regex);
+                        // Update CSVs of valid and invalid values according to the generated regular
+                        // expression (test-data folder)
+                        updateCsvWithRegex(semanticParameter.getValidCSVPath(getExperimentName(),
+                                semanticOperation.getOperationId()), regex);
+                        updateCsvWithRegex(semanticParameter.getInvalidCSVPath(getExperimentName(),
+                                semanticOperation.getOperationId()), regex);
 
                         // Second predicate search using the generated regex
-                        if(secondPredicateSearch && semanticParameter.getPredicates().size() <= maxNumberOfPredicates){
+                        if (secondPredicateSearch
+                                && semanticParameter.getPredicates().size() <= maxNumberOfPredicates) {
 
                             // Get new predicates for parameter
-                            Set<String> newPredicates = getPredicates(semanticOperation, semanticParameter, regex, spec);
+                            Set<String> newPredicates = getPredicates(semanticOperation, semanticParameter, regex,
+                                    spec);
 
-                            if(!newPredicates.isEmpty()) {
+                            if (!newPredicates.isEmpty()) {
                                 // Get new values
                                 Set<String> results = getNewValues(semanticParameter, newPredicates, regex);
 
@@ -191,7 +209,8 @@ public class StatsReportManager {
                                 // Update testConf file
                                 // Set the value to 0 again (and update testConf accordingly)
                                 TestConfigurationObject conf = getTestConfigurationObject();
-                                updateTestConfWithNewPredicates(conf, confPath, semanticOperation, semanticParameter, newPredicates);
+                                updateTestConfWithNewPredicates(conf, confPath, semanticOperation, semanticParameter,
+                                        newPredicates);
                             }
 
                         }
@@ -204,13 +223,14 @@ public class StatsReportManager {
 
         }
 
-
     }
 
     // Generate CVS statistics (test cases to CSV)
     private void generateCSVStats(String testId) {
         logger.info("Exporting test cases to CSV");
-        String csvTcPath = testDataDir + "/" + PropertyManager.readProperty("data.tests.testcases.file") + "_" + testId + ".csv";
+        String csvTcPath = testDataDir + "/" + PropertyManager.readProperty("data.tests.testcases.file") + "_" + testId
+                + ".csv";
+        logger.info("{}", csvTcPath);
         testCases.forEach(tc -> tc.exportToCSV(csvTcPath));
     }
 
@@ -222,19 +242,24 @@ public class StatsReportManager {
 
         if (enableOutputCoverage && executeTestCases) {
             // Update CoverageMeter with the test results
-            String csvTrPath = testDataDir + "/" + PropertyManager.readProperty("data.tests.testresults.file") + "_" + testId + ".csv";
+            String csvTrPath = testDataDir + "/" + PropertyManager.readProperty("data.tests.testresults.file") + "_"
+                    + testId + ".csv";
             List<TestResult> trs = TestManager.getTestResults(csvTrPath);
             coverageMeter.addTestResults(trs, testCases);
         }
 
         if (enableInputCoverage || enableOutputCoverage) {
             // Generate coverage report (input coverage a priori)
-            exportCoverageReport(coverageMeter, coverageDataDir + "/" + PropertyManager.readProperty("data.coverage.computation.priori.file") + "_" + testId + ".csv");
+            exportCoverageReport(coverageMeter, coverageDataDir + "/"
+                    + PropertyManager.readProperty("data.coverage.computation.priori.file") + "_" + testId + ".csv");
             logger.info("Coverage report a priori generated.");
 
-            if(executeTestCases) {
+            if (executeTestCases) {
                 // Generate coverage report (input coverage a posteriori)
-                exportCoverageReport(coverageMeter.getAPosteriorCoverageMeter(), coverageDataDir + "/" + PropertyManager.readProperty("data.coverage.computation.posteriori.file") + "_" + testId + ".csv");
+                exportCoverageReport(coverageMeter.getAPosteriorCoverageMeter(),
+                        coverageDataDir + "/"
+                                + PropertyManager.readProperty("data.coverage.computation.posteriori.file") + "_"
+                                + testId + ".csv");
                 logger.info("Coverage report a posteriori generated.");
             }
         }
